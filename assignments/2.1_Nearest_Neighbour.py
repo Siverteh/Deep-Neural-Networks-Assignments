@@ -37,7 +37,7 @@ class KNN:
 
 
 # Load the dataset
-url = 'path_to_pima_indian_diabetes_csv'  # replace with your downloaded file path
+url = 'datasets/pima-indians-diabetes.csv'  # replace with your downloaded file path
 df = pd.read_csv(url)
 
 # Preprocess the dataset
