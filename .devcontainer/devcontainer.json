@@ -8,10 +8,18 @@
         "vscode": {
             "extensions": [
                 "ms-python.python",
-                "ms-python.vscode-pylance"
+                "ms-python.vscode-pylance",
+                "akamud.vscode-theme-onedark",
+                "vscode-icons-team.vscode-icons",
+                "ms-azuretools.vscode-docker",
+                "github.copilot",
+                "ms-toolsai.jupyter",
+                "mechatroner.rainbow-csv"
             ],
             "settings": {
-                "terminal.integrated.shell.linux": "/bin/bash"
+                "terminal.integrated.shell.linux": "/bin/bash",
+                "workbench.colorTheme": "Atom One Dark",
+                "workbench.iconTheme": "vscode-icons"
             }
         }
     },
