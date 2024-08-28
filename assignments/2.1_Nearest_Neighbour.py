@@ -58,7 +58,7 @@ class KNN:
         return np.array(predictions)
     
     def _calculate_metrics(self, k_values: int) -> list[dict[float, float, float, float, float]]:
-        metrics_results = []
+        all_metrics = []
         
         # Splitting the dataset into features and labels
         X = self.df.iloc[:, :-1].values  # Features
@@ -74,6 +74,14 @@ class KNN:
             y_pred = self.predict(X_test)
 
             metrics["accuracy"] = accuracy_score(y_test, y_pred)
+            metrics["f1"] = f1_score(y_test, y_pred)
+            metrics["precision"] = precision_score(y_test, y_pred)
+            metrics["recall"] = recall_score(y_test, y_pred)
+            metrics["mse"] = mean_squared_error(y_test, y_pred)
+            print(f'k={k}: Accuracy={metrics["accuracy"]:.4f}, F1={metrics["f1"]:.4f}, Precision={metrics["precision"]:.4f}, Recall={metrics["recall"]:.4f}, MSE={metrics["mse"]:.4f}')
+            
+            all_metrics.append(metrics)
+        return all_metrics
 
     def run_knn(self, max_k):
         """
@@ -92,56 +100,30 @@ class KNN:
 
         # Lists to store metrics for each k
         k_values = list(range(1, max_k + 1))
-        accuracies = []
-        f1_scores = []
-        precisions = []
-        recalls = []
-        mses = []
-
-        # Loop through each value of k from 1 to max_k
-        for k in k_values:
-            self.k = k
-            self.fit(X_train, y_train)
-            y_pred = self.predict(X_test)
-            
-            # Calculate metrics
-            accuracy = accuracy_score(y_test, y_pred)
-            f1 = f1_score(y_test, y_pred)
-            precision = precision_score(y_test, y_pred)
-            recall = recall_score(y_test, y_pred)
-            mse = mean_squared_error(y_test, y_pred)
-            
-            # Store metrics
-            accuracies.append(accuracy)
-            f1_scores.append(f1)
-            precisions.append(precision)
-            recalls.append(recall)
-            mses.append(mse)
-
-            # Print metrics for the current k
-            print(f'k={k}: Accuracy={accuracy:.4f}, F1={f1:.4f}, Precision={precision:.4f}, Recall={recall:.4f}, MSE={mse:.4f}')
+        
+        metrics = self._calculate_metrics(k_values)
 
         # Find the best k based on accuracy
-        best_k = k_values[np.argmax(accuracies)]
-        print(f'\nBest k based on accuracy: k={best_k} with Accuracy={max(accuracies):.4f}')
+        best_k = k_values[np.argmax(metric["accuracy"] for metric in metrics)]
+        print(f'\nBest k based on accuracy: k={best_k} with Accuracy={max(metric["accuracy"] for metric in metrics):.4f}')
 
         # Create a single plot for all metrics
         fig = go.Figure()
 
         # Plot Accuracy
-        fig.add_trace(go.Scatter(x=k_values, y=accuracies, mode='lines+markers', name='Accuracy'))
+        fig.add_trace(go.Scatter(x=k_values, y=[metric["accuracy"] for metric in metrics], mode='lines+markers', name='Accuracy'))
 
         # Plot F1 Score
-        fig.add_trace(go.Scatter(x=k_values, y=f1_scores, mode='lines+markers', name='F1 Score'))
+        fig.add_trace(go.Scatter(x=k_values, y=[metric["f1"] for metric in metrics], mode='lines+markers', name='F1 Score'))
 
         # Plot Precision
-        fig.add_trace(go.Scatter(x=k_values, y=precisions, mode='lines+markers', name='Precision'))
+        fig.add_trace(go.Scatter(x=k_values, y=[metric["precision"] for metric in metrics], mode='lines+markers', name='Precision'))
 
         # Plot Recall
-        fig.add_trace(go.Scatter(x=k_values, y=recalls, mode='lines+markers', name='Recall'))
+        fig.add_trace(go.Scatter(x=k_values, y=[metric["recall"] for metric in metrics], mode='lines+markers', name='Recall'))
 
         # Plot MSE (inverted to show lower is better)
-        fig.add_trace(go.Scatter(x=k_values, y=[-mse for mse in mses], mode='lines+markers', name='MSE (Inverted)'))
+        fig.add_trace(go.Scatter(x=k_values, y=[-metric["mse"] for metric in metrics], mode='lines+markers', name='MSE (Inverted)'))
 
         # Update layout to make the plot fill the entire window
         fig.update_layout(
