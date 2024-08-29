@@ -1,16 +1,53 @@
-# This is a sample Python script.
+from assignments.k_nearest_neighbour import KNN
+from assignments.neural_networks import MLPModels  # Assuming you save the MLPModels class in mlp_models.py
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+def run_knn():
+    while True:
+        max_k = input("Enter max k for K Nearest Neighbour: ")
 
+        try:
+            max_k = int(max_k)  # Convert the input to an integer
+            knn = KNN()
+            knn.run_knn(max_k)
+            break  # Exit the loop after running the KNN function
+        except ValueError:
+            print("Invalid choice. Please enter a valid whole number.")
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+def run_simple_mlp():
+    dataset_path = '/workspaces/Small_Assignments/datasets/ecoli/ecoli.data'
+    mlp_models = MLPModels(dataset_path)
+    mlp_models.run_simple_mlp()
 
+def run_keras_mlp():
+    dataset_path = '/workspaces/Small_Assignments/datasets/ecoli/ecoli.data'
+    mlp_models = MLPModels(dataset_path)
+    mlp_models.run_keras_mlp()
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+def menu():
+    print("Select an assignment to run:")
+    print("1: K-Nearest Neighbour")
+    print("2: Simple MLP (No Training)")
+    print("3: Keras MLP (Training Included)")
+    print("0: Exit")
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+def main():
+    functions = {
+        "1": run_knn,
+        "2": run_simple_mlp,
+        "3": run_keras_mlp,
+    }
+
+    while True:
+        menu()
+        choice = input("Enter your choice: ")
+
+        if choice == "0":
+            print("Exiting the program.")
+            break
+        elif choice in functions:
+            functions[choice]()
+        else:
+            print("Invalid choice. Please enter a valid number.")
+
+if __name__ == "__main__":
+    main()
