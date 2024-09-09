@@ -1,5 +1,5 @@
-from assignments.k_nearest_neighbour import KNN
-from assignments.neural_networks import MLPModels  # Assuming you save the MLPModels class in mlp_models.py
+from assignments.assignment_1.k_nearest_neighbour import KNN
+from assignments.assignment_2.neural_networks import MLPModels  # Assuming you save the MLPModels class in mlp_models.py
 
 def run_knn():
     while True:

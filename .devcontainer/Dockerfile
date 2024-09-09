@@ -1,23 +1,17 @@
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim
-
-# Install necessary tools including Git
-RUN apt-get update && apt-get install -y \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+# Use NVIDIA's PyTorch container with CUDA 12.6 and PyTorch 2.5.0-alpha
+FROM nvcr.io/nvidia/pytorch:24.08-py3
 
 # Set the working directory in the container
 WORKDIR /workspace
 
-# Install any needed packages specified in requirements.txt
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the current directory contents into the container at /workspace
+# Copy your project files to the container
 COPY . /workspace
 
-# Expose port 8000 if your project requires it (for example, for a web server)
+# Install any additional dependencies required by your project
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Expose port 8000 (or whatever port your application uses)
 EXPOSE 8000
 
-# Run a command that keeps the container alive (e.g., a web server)
-CMD ["python", "main.py"]  # Replace with your actual start script
+# Set the default command to run your Python application
+CMD ["python3", "main.py"]  # Adjust the script name to your project
