@@ -4,8 +4,27 @@ import torch.optim as optim
 from sklearn.metrics import classification_report, confusion_matrix
 from food_dataset import create_data_loaders, class_mapping  
 from torchvision import models
+import torch.nn.functional as F
 
-class ResNetClassifier:
+
+class CustomCNN(nn.Module):
+    def __init__(self):
+        super(CustomCNN, self).__init__()
+        self.conv1 = nn.Conv2d(3, 16, 3, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
+        self.fc1 = nn.Linear(32 * 56 * 56, 512)
+        self.fc2 = nn.Linear(512, 11)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(-1, 32 * 56 * 56)  # Flatten the tensor for the fully connected layer
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+
+class FoodClassifier:
     def __init__(self, data_dir='datasets/food-11', batch_size=32, lr=0.001, num_epochs=10):
         self.data_dir = data_dir
         self.batch_size = batch_size
@@ -70,7 +89,7 @@ class ResNetClassifier:
         print("Confusion Matrix:")
         print(confusion_matrix(test_labels, test_preds, labels=[i for i in range(11)]))
 
-    def run(self):
+    def run_resnet(self):
         # Use ResNet18
         print("Running with ResNet18...")
         weights = models.ResNet18_Weights.IMAGENET1K_V1  
@@ -84,6 +103,24 @@ class ResNetClassifier:
         self.train(model, optimizer, criterion)
         self.validate_and_test(model)
 
+    def run_custom(self):
+        # Initialize the model
+        print("Running with Custom CNN...")
+        model = CustomCNN().to(self.device)
+
+        # Define loss and optimizer
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=self.lr)
+
+        # Train and evaluate the model
+        self.train(model, optimizer, criterion)
+        self.validate_and_test(model)
+
 if __name__ == "__main__":
-    classifier = ResNetClassifier(data_dir='datasets/food-11', batch_size=32, lr=0.001, num_epochs=20)
-    classifier.run()
+    classifier = FoodClassifier(data_dir='datasets/food-11', batch_size=32, lr=0.001, num_epochs=20)
+    
+    #Run with resnet:
+    classifier.run_custom()
+
+    #Run with custom cnn:
+    #classifier.run_resnet()
