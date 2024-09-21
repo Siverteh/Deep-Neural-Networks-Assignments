@@ -24,44 +24,59 @@ class KNN:
         """
         Initialize the KNN classifier with a dataset.
         """
-        self.df = pd.read_csv(dataset)
+        self.dataset = np.loadtxt(dataset, delimiter=",")
         self.k = None
         self.X_train = None
         self.y_train = None
 
-    def fit(self, X_train: np.ndarray, y_train: np.ndarray):
-        """
-        Fit the model with the training data.
-        """
-        self.X_train = X_train
-        self.y_train = y_train
-
     def euclidean_distance(self, x1: np.ndarray, x2: np.ndarray) -> float:
         """
-        Calculate the Euclidean distance between two points.
+        Calculate the Euclidean distance between two points using np.linalg.norm.
         """
-        return np.sqrt(np.sum((x1 - x2) ** 2))
+        return np.linalg.norm(x1 - x2)
+
 
     def predict(self, X_test: np.ndarray) -> np.ndarray:
         """
         Predict the class for each sample in X_test.
+        Handles ties using the same method as the first code with Counter.most_common(1).
         """
         predictions = []
         for x in X_test:
+            # Calculate distances between the query point and all training points
             distances = [self.euclidean_distance(x, x_train) for x_train in self.X_train]
+            # Sort distances and get the k nearest neighbors
             k_indices = np.argsort(distances)[:self.k]
             k_nearest_labels = [self.y_train[i] for i in k_indices]
-            most_common = Counter(k_nearest_labels).most_common(1)
-            predictions.append(most_common[0][0])
+            
+            # Use Counter.most_common(1) to get the label with the highest count (majority voting)
+            predict_label = Counter(k_nearest_labels).most_common(1)[0][0]
+            
+            predictions.append(predict_label)
+        
         return np.array(predictions)
 
+
+
     @staticmethod
-    def manual_train_test_split(X: np.ndarray, y: np.ndarray, test_size: float = 0.2, random_state: int = 7) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        np.random.seed(random_state)
-        indices = np.random.permutation(len(X))
-        test_size = int(len(X) * test_size)
-        test_indices, train_indices = indices[:test_size], indices[test_size:]
-        return X[train_indices], X[test_indices], y[train_indices], y[test_indices]
+    def manual_train_test_split(X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Split the dataset into training and test sets manually with shuffling.
+        Ensures the same behavior as the first code.
+        """
+        np.random.seed(6)  # Set random seed for reproducibility
+        indices = np.random.permutation(len(X))  # Shuffle the indices
+        X = X[indices]
+        y = y[indices]
+        # split 80/20
+        split_ratio = 0.8
+        split_index = int(len(X) * split_ratio)
+        X_train, X_test = X[:split_index], X[split_index:]
+        y_train, y_test = y[:split_index], y[split_index:]
+
+        
+        return X_train, X_test, y_train, y_test
+
 
     @staticmethod
     def calculate_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> Tuple[float, float, float, float, float]:
@@ -84,15 +99,15 @@ class KNN:
         return accuracy, precision, recall, f1, mse, confusion_matrix
 
     def get_all_metrics(self, k_values: List[int]) -> List[Metrics]:
-        X = self.df.iloc[:, :-1].values
-        y = self.df.iloc[:, -1].values
+        X = self.dataset[:, :-1]
+        y = self.dataset[:, -1]
 
         X_train, X_test, y_train, y_test = self.manual_train_test_split(X, y)
 
         all_metrics = []
         for k in k_values:
             self.k = k
-            self.fit(X_train, y_train)
+            self.X_train, self.y_train = X_train, y_train
             y_pred = self.predict(X_test)
 
             accuracy, precision, recall, f1, mse, cm = self.calculate_metrics(y_test, y_pred)
@@ -101,8 +116,13 @@ class KNN:
             
             # Print the results for the current k
             print('--------------------------------------------------------')
-            print(f'k={k}:\n{metrics}')
-            print('Confusion Matrix:')
+            print("K VALUE:")
+            print(f'k={k}')
+            print()
+            print("RESULTS:")
+            print(metrics)
+            print()
+            print('CONFUSION MATRIX:')
             print('                Predicted Negative   Predicted Positive')
             print(f'Actual Negative       {cm[0, 0]:<18} {cm[0, 1]}')
             print(f'Actual Positive       {cm[1, 0]:<18} {cm[1, 1]}')
@@ -112,36 +132,61 @@ class KNN:
 
         return all_metrics
 
-    @staticmethod
-    def _visualize(k_values: List[int], metrics: List[Metrics]):
+    def _visualize(self, k_values: List[int], metrics: List[Metrics]):
         fig = go.Figure()
         # Plot Accuracy
         fig.add_trace(go.Scatter(x=k_values, y=[m.accuracy for m in metrics], mode='lines+markers', name='Accuracy'))
-        # Plot F1 Score
-        fig.add_trace(go.Scatter(x=k_values, y=[m.f1 for m in metrics], mode='lines+markers', name='F1 Score'))
         # Plot Precision
         fig.add_trace(go.Scatter(x=k_values, y=[m.precision for m in metrics], mode='lines+markers', name='Precision'))
+        # Plot F1 Score
+        fig.add_trace(go.Scatter(x=k_values, y=[m.f1 for m in metrics], mode='lines+markers', name='F1 Score'))
         # Plot Recall
         fig.add_trace(go.Scatter(x=k_values, y=[m.recall for m in metrics], mode='lines+markers', name='Recall'))
         # Plot MSE (Inverted to show lower is better)
-        fig.add_trace(go.Scatter(x=k_values, y=[-m.mse for m in metrics], mode='lines+markers', name='MSE (Inverted)'))
-        # Loss graph: MSE plotted directly as loss
-        fig.add_trace(go.Scatter(x=k_values, y=[m.mse for m in metrics], mode='lines+markers', name='Loss (MSE)', yaxis='y2'))
+        fig.add_trace(go.Scatter(x=k_values, y=[m.mse for m in metrics], mode='lines+markers', name='MSE'))
 
         # Add a secondary y-axis for loss
         fig.update_layout(
-            title="KNN Metrics by k",
-            xaxis_title="k",
-            yaxis_title="Metric Value",
-            yaxis2=dict(title="Loss (MSE)", overlaying="y", side="right"),
+            title={
+                'text': "KNN Metrics by k",
+                'y': 0.95,  # Move title slightly higher to avoid overlap with the plot
+                'x': 0.5,  # Centers the title horizontally
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': {'size': 40}  # Adjusts the title font size
+            },
+            xaxis_title={
+                'text': "k",
+                'font': {'size': 40}  # Adjusts the x-axis title font size
+            },
+            yaxis_title={
+                'text': "Metric Value",
+                'font': {'size': 40}  # Adjusts the y-axis title font size
+            },
+            yaxis2=dict(
+                title="Loss (MSE)",
+                overlaying="y",
+                side="right",
+                titlefont={'size': 40}  # Adjusts the secondary y-axis title font size
+            ),
+            # Make the x and y tick values (numbers) larger
+            xaxis=dict(
+                tickfont=dict(size=40)  # Adjust the x-axis tick font size
+            ),
+            yaxis=dict(
+                tickfont=dict(size=40)  # Adjust the y-axis tick font size
+            ),
             legend_title="Metrics",
             template="plotly_white",
             autosize=True,
-            margin=dict(l=0, r=0, t=30, b=0),
+            margin=dict(l=0, r=0, t=50, b=0),  # Adjust margin to give more space for the title
+            # Increase the font size of the legend
+            legend=dict(
+                font=dict(size=40)  # Adjust the size to your preference
+            )
         )
         
         fig.show()
-
 
     def run_knn(self, max_k: int):
         k_values = list(range(1, max_k + 1))
